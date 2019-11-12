@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using Harmony;
 
 namespace CustomFloorPlugin
 {
@@ -99,6 +100,13 @@ namespace CustomFloorPlugin
             GameObject newPlatform = GameObject.Instantiate(platformPrefab.gameObject);
             newPlatform.transform.parent = parent;
 
+            LightWithId[] lights = Resources.FindObjectsOfTypeAll<LightWithId>();
+            foreach (LightWithId light in lights)
+            {
+                if (Plugin.LightsWithId_Patch.GameLightManager != null)
+                    Plugin.LightsWithId_Patch.GameLightManager.RegisterLight(light);
+            }
+
             bundle.Unload(false);
 
             // Collect author and name
@@ -147,7 +155,7 @@ namespace CustomFloorPlugin
         {
             // Replace materials for this object
             MaterialSwapper.ReplaceMaterialsForGameObject(go);
-            
+
             /*
             // Add a tube light manager if there are tube light descriptors
             if (go.GetComponentInChildren<TubeLight>(true) != null)
@@ -157,7 +165,9 @@ namespace CustomFloorPlugin
                 tlm.CreateTubeLights(go);
             }
             */
-            
+
+
+
             // Rotation effect manager
             if (go.GetComponentInChildren<RotationEventEffect>(true) != null)
             {

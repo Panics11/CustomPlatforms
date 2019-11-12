@@ -26,7 +26,20 @@ namespace CustomFloorPlugin
 
             HarmonyInstance hi = HarmonyInstance.Create("com.rolopogo.customplatforms");
             hi.PatchAll(System.Reflection.Assembly.GetExecutingAssembly());
+        }
 
+        [HarmonyPatch(typeof(LightWithId))]
+        [HarmonyPatch("Start")]
+        public class LightsWithId_Patch
+        {
+            static bool HasBeenRun = false;
+            public static LightWithIdManager GameLightManager = null;
+            static public void Postfix(LightWithIdManager ____lighManager)
+            {
+                if (HasBeenRun) return;
+                //HasBeenRun = true;
+                GameLightManager = ____lighManager;
+            }
         }
 
         private void OnMenuSceneLoadedFresh()
@@ -43,7 +56,24 @@ namespace CustomFloorPlugin
             BSEvents.menuSceneLoadedFresh -= OnMenuSceneLoadedFresh;
         }
 
-        public void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode) { }
+        public void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode) {
+            Scene[] scenes = SceneManager.GetAllScenes();
+            LightWithId[] lights = GameObject.FindObjectsOfType<LightWithId>();
+            LightWithId[] lights2 = Resources.FindObjectsOfTypeAll<LightWithId>();
+
+            if (LightsWithId_Patch.GameLightManager != null)
+                Traverse.Create(LightsWithId_Patch.GameLightManager).SetPrivateField("_lights", new System.Collections.Generic.List<LightWithId>[21]);
+
+            foreach (LightWithId light in lights)
+            {
+                LightsWithId_Patch.GameLightManager.RegisterLight(light);
+            }
+
+            foreach (LightWithId light in lights2)
+            {
+                LightsWithId_Patch.GameLightManager.RegisterLight(light);
+            }
+        }
 
         public void OnSceneUnloaded(Scene scene) { }
 

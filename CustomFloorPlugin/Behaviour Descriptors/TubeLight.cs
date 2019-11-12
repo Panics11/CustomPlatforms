@@ -6,14 +6,17 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
+using Harmony;
 
 namespace CustomFloorPlugin
 {
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
+
     public class TubeLight : MonoBehaviour
     {
-        public enum LightsID {
+        public enum LightsID
+        {
             Static = 0,
             BackLights = 1,
             BigRingLights = 2,
@@ -35,9 +38,9 @@ namespace CustomFloorPlugin
 
         public float width = 0.5f;
         public float length = 1f;
-        [Range(0,1)]
+        [Range(0, 1)]
         public float center = 0.5f;
-        public Color color = Color.white;
+        public Color color = Color.blue;
         public LightsID lightsID = LightsID.Static;
         private static LightWithIdManager _lightManager;
         public static LightWithIdManager lightManager
@@ -45,11 +48,12 @@ namespace CustomFloorPlugin
             get
             {
                 if (!_lightManager)
-                    _lightManager = new GameObject("CustomPlatformsLightManager").AddComponent<LightWithIdManager>();
+                    //_lightManager = new GameObject("CustomPlatformsLightManager").AddComponent<LightWithIdManager>();
+                    _lightManager = Plugin.LightsWithId_Patch.GameLightManager;
                 return _lightManager;
             }
         }
-        
+
         private void OnDrawGizmos()
         {
             Gizmos.color = color;
@@ -71,7 +75,7 @@ namespace CustomFloorPlugin
             if (localDescriptors == null) return;
 
             TubeLight tl = this;
-            
+
             tubeBloomLight = Instantiate(prefab);
             tubeBloomLight.transform.SetParent(tl.transform);
             tubeBloomLight.transform.localRotation = Quaternion.identity;
@@ -95,16 +99,15 @@ namespace CustomFloorPlugin
             tubeBloomLight.gameObject.SetActive(false);
 
             var lightWithId = tubeBloomLight.GetComponent<LightWithId>();
-            if(lightWithId)
+            if (lightWithId)
             {
-                lightWithId.SetPrivateField("_tubeBloomPrePassLight", tubeBloomLight);
-                var runtimeFields = typeof(LightWithId).GetTypeInfo().GetRuntimeFields();
-                runtimeFields.First(f => f.Name == "_ID").SetValue(lightWithId, (int)tl.lightsID);
+                //lightWithId.SetPrivateField("_tubeBloomPrePassLight", tubeBloomLight);
+                //var runtimeFields = typeof(LightWithId).GetTypeInfo().GetRuntimeFields();
+                //runtimeFields.First(f => f.Name == "_ID").SetValue(lightWithId, (int)tl.lightsID);
                 //var lightManagers = Resources.FindObjectsOfTypeAll<LightWithIdManager>();
                 //lightManager = lightManagers.FirstOrDefault();
 
-                runtimeFields.First(f => f.Name == "_lighManager").SetValue(lightWithId, lightManager);
-
+                //runtimeFields.First(f => f.Name == "_lighManager").SetValue(lightWithId, lightManager);
             }
 
             tubeBloomLight.SetPrivateField("_width", tl.width * 2);
@@ -123,6 +126,7 @@ namespace CustomFloorPlugin
             tubeBloomLight.gameObject.SetActive(true);
             tubeBloomLight.Refresh();
             //TubeLightManager.UpdateEventTubeLightList();
+           
         }
 
         private void GameSceneLoaded()
@@ -133,7 +137,7 @@ namespace CustomFloorPlugin
 
         private void OnBeatmapEvent(BeatmapEventData obj)
         {
-            int type = (int)obj.type+1;
+            int type = (int)obj.type + 1;
             if (type == (int)lightsID)
             {
                 tubeBloomLight.color = lightManager.GetColorForId(type) * 0.9f;
